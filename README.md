@@ -1,47 +1,124 @@
 # Ethiopian Medical Business Data Pipeline
 
-## Data Flow Architecture
-Medical insights eth6iopia
-├── data/               # Data storage
-├── docs/               # Documentation
-├── src/
-│   ├── scraping/       # Telegram collectors
-│   ├── nlp/           # Text processing
-│   ├── database/      # Data persistence
-│   └── analytics/     # Insight generation
-├── tests/             # Test cases
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
-# Extract: Scrape Telegram channels
+This project is designed to extract, load, and transform Telegram data relevant to Ethiopian medical businesses. It is built with a focus on reproducibility, modularity, and scalability using Python, Docker, PostgreSQL, and dbt.
 
-# Transform: Clean and translate content
+---
 
-Load: Store in PostgreSQL
+## ⚙️ Task 0 - Project Setup & Environment Management
 
-# Analyze: Generate insights and visualizations
+### 📁 Project Initialization
 
-# Adding New Channels
-Register the channel in src/scraping/channel_registry.py
+* Initialize the project using Git:
 
-# Add test cases in tests/scraping/test_channels.py
+  ```bash
+  git init
+  ```
+* Create a Python environment and track dependencies in `requirements.txt`:
 
-The system will automatically include it in the next scrape
+  ```bash
+  pip freeze > requirements.txt
+  ```
 
-# Common Issues:
+### 📅 Docker & Docker Compose
 
-Telegram API Limits:
+* Create a `Dockerfile` to containerize the Python scraping environment.
+* Create a `docker-compose.yml` file to orchestrate both Python and PostgreSQL services.
 
-Implemented automatic retry with exponential backoff
+### 🔐 Environment Secrets
 
-Check scraping.log for details
+* Store secrets such as Telegram API credentials and DB passwords in a `.env` file.
+* Add `.env` to `.gitignore` to prevent committing sensitive data:
 
-Amharic Text Encoding:
+  ```bash
+  echo ".env" >> .gitignore
+  ```
+* Use `python-dotenv` to load secrets inside Python scripts:
 
-# Ensure proper handling:
-text.encode('utf-8').decode('utf-8')
-Database Connection Issues:
+  ```python
+  from dotenv import load_dotenv
+  load_dotenv()
+  ```
 
-Verify PostgreSQL is running: docker-compose ps
+---
 
-Check logs: docker-compose logs db
+## 📁 Task 1 - Data Scraping and Collection (Extract & Load)
+
+### 🤖 Telegram Scraping
+
+* Use the Telegram API via `telethon` to scrape messages from:
+
+  * \[Chemed Telegram Channel]
+  * [https://t.me/lobelia4cosmetics](https://t.me/lobelia4cosmetics)
+  * [https://t.me/tikvahpharma](https://t.me/tikvahpharma)
+  * More sources via: [https://et.tgstat.com/medicine](https://et.tgstat.com/medicine)
+
+### 📷 Image Scraping
+
+* Collect and store images from messages for future object detection use cases.
+
+### 📊 Data Lake Structure
+
+* Store raw, unaltered Telegram data in a structured, date-partitioned directory:
+
+  ```
+  data/raw/telegram_messages/YYYY-MM-DD/channel_name/messages.json
+  ```
+
+### ⛏ Logging & Monitoring
+
+* Implement logging to capture:
+
+  * Successfully scraped channels and dates
+  * Failures and rate-limiting events
+
+---
+
+## 📊 Task 2 - Data Modeling and Transformation (Transform)
+
+### 🔢 Loading to PostgreSQL
+
+* Write a script to load raw `.json` files into a `raw.telegram_messages` table using `psycopg2` or `sqlalchemy`.
+
+### 👾 DBT Setup
+
+* Install dbt:
+
+  ```bash
+  pip install dbt-postgres
+  ```
+* Initialize project:
+
+  ```bash
+  dbt init my_project
+  ```
+* Configure `profiles.yml` to connect to PostgreSQL.
+
+### 🔧 DBT Model Layers
+
+#### ✨ Staging Models (`stg_telegram_messages.sql`)
+
+* Light cleaning, type casting, renaming, and extracting key fields.
+
+#### 📊 Data Mart Models
+
+* **`dim_channels`**: Info per Telegram channel.
+* **`dim_dates`**: Time-based breakdown.
+* **`fct_messages`**: One row per message with FK references and metrics (e.g., message length, has\_image).
+
+### ✅ Testing & Documentation
+
+* Use built-in dbt tests:
+
+  ```yaml
+  tests:
+    - unique
+    - not_null
+  ```
+* Write at least one custom test (e.g., messages must have timestamps).
+* Generate and serve documentation:
+
+  ```bash
+  dbt docs generate
+  dbt docs serve
+  ```
+
