@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from telethon.sync import TelegramClient
-from telethon.tl.types import MessageMediaPhoto
+from telethon.tl.types import MessageMediaPhotophoto
 from .storage_manager import write_to_datalake
 from .channel_registry import CHANNEL_REGISTRY
 
